@@ -1,0 +1,90 @@
+name: Verify and build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+        default: ${{ github.sha }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+          check-latest: true
+          cache: true
+
+      - name: Install Taskfile
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Install dependencies
+        run: task install
+
+      - name: Lint
+        run: task lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+          check-latest: true
+          cache: true
+
+      - name: Install Taskfile
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Install dependencies
+        run: task install
+
+      - name: Test
+        run: task test
+
+      - name: Archive coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.html
+          path: |
+            coverage.html
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+          check-latest: true
+          cache: true
+
+      - name: Tag version
+        run: |
+          echo "Tagging version to ${{ inputs.version }}"
+          echo ${{ inputs.version }} > cmd/version.txt
+
+      - name: Install Taskfile
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Install dependencies
+        run: task install
+
+      - name: Build
+        run: task build
+
+      - name: Archive go build
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-build
+          retention-days: 1
+          path: |
+            build

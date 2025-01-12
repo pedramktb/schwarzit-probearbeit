@@ -1,0 +1,16 @@
+name: Verify PR
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/_test_build.yml
+
+  docs:
+    uses: ./.github/workflows/_generate_docs.yml

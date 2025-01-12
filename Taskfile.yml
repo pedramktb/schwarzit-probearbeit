@@ -1,0 +1,53 @@
+version: '3'
+
+tasks:
+  clean:
+    cmds:
+      - rm -rf ./.task
+      - rm -rf ./build
+      - rm -rf ./gen
+
+  install:
+    cmds:
+      - task: install:go
+
+  install:go:
+    cmds:
+      - go install github.com/swaggo/swag/cmd/swag@latest
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - go mod download
+
+  generate:
+    cmds:
+      - go generate ./...
+      - task: docs
+
+  docs:
+    cmds:
+      - swag init -g cmd/standalone/main.go -o docs
+    silent: true
+
+  version:prod:
+    cmds:
+      - cd cmd && git describe --tags --abbrev=0 > version.txt
+
+  lint:
+    deps: [ generate ]
+    cmds:
+      - go vet cmd/standalone/main.go
+      - golangci-lint run
+
+  test:
+    deps: [ generate ]
+    cmds:
+      - go test -cover -coverprofile=coverage.out -race ./...
+      - go tool cover -html coverage.out -o coverage.html
+
+  build:
+    deps: [ generate ]
+    cmds:
+      - task: build:standalone
+
+  build:standalone:
+    cmds:
+      - go build -o build/dev cmd/standalone/main.go

@@ -1,0 +1,16 @@
+name: Deploy main branch
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: "dev-deploy"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/_test_build.yml
+
+  docs:
+    uses: ./.github/workflows/_generate_docs.yml
