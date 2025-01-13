@@ -84,7 +84,7 @@ func Test_Query(t *testing.T) {
 	}{
 		{
 			name:    "Success Case",
-			query:   types.QueryParams{Conditions: &types.UserPatch{FirstName: types.ToOptional("test")}},
+			query:   types.QueryParams{Conditions: &types.UserPatch{LastName: types.ToOptional("user")}},
 			want:    []types.User{testData.TestUser},
 			wantErr: false,
 		},

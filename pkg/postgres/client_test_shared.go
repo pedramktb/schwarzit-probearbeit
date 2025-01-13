@@ -6,6 +6,9 @@ import (
 	"time"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/pedramktb/schwarzit-probearbeit/migration"
+	v1Migration "github.com/pedramktb/schwarzit-probearbeit/migration/v1"
+	"go.uber.org/fx"
 	"gorm.io/gorm"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -16,7 +19,7 @@ import (
 func Test_Create_Container() (container testcontainers.Container, ip, port string) {
 	ctx := context.Background()
 
-	postgresContainer, err := postgresC.Run(ctx, "postgis/postgis:latest",
+	postgresContainer, err := postgresC.Run(ctx, "postgres:latest",
 		postgresC.WithUsername("postgres"),
 		postgresC.WithPassword("example"),
 		testcontainers.WithWaitStrategy(
@@ -52,6 +55,14 @@ func Test_Create_DB(ip, port, dbName string) *gorm.DB {
 	Close(db)
 
 	db = create(fmt.Sprintf("postgres://postgres:example@%s:%s/%s", ip, port, dbName))
+
+	fx.New(
+		fx.Provide(func() *gorm.DB { return db }),
+		v1Migration.FXV1TestMigrationProvide,
+		fx.Invoke(func(m migration.Migrator) {
+			m.Migrate(context.Background())
+		}),
+	)
 
 	return db
 }

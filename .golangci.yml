@@ -123,7 +123,7 @@ linters:
     - copyloopvar
     - funlen
     - gocheckcompilerdirectives
-    - gochecknoinits
+    # - gochecknoinits
     - goconst
     - gocritic
     - gocyclo

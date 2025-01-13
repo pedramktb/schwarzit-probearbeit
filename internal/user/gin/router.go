@@ -10,6 +10,7 @@ import (
 	"github.com/pedramktb/schwarzit-probearbeit/internal/datasource"
 	"github.com/pedramktb/schwarzit-probearbeit/internal/dtos"
 	ginRouter "github.com/pedramktb/schwarzit-probearbeit/internal/gin"
+	"github.com/pedramktb/schwarzit-probearbeit/internal/logging"
 	"github.com/pedramktb/schwarzit-probearbeit/internal/types"
 )
 
@@ -48,7 +49,7 @@ func create(
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users [post]
 func (r *r) Create(c *gin.Context) {
-	if isAdmin := c.GetBool("is_admin"); !isAdmin {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -140,7 +141,7 @@ func (r *r) Get(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/{id} [put]
 func (r *r) Update(c *gin.Context) {
-	if isAdmin := c.GetBool("is_admin"); !isAdmin {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -180,7 +181,7 @@ func (r *r) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/{id} [patch]
 func (r *r) Patch(c *gin.Context) {
-	if isAdmin := c.GetBool("is_admin"); !isAdmin {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -226,7 +227,7 @@ func (r *r) Patch(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/{id} [delete]
 func (r *r) Delete(c *gin.Context) {
-	if isAdmin := c.GetBool("is_admin"); !isAdmin {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -257,11 +258,8 @@ func (r *r) Delete(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/me [get]
 func (r *r) GetMe(c *gin.Context) {
-	id, err := uuid.Parse(c.GetString("user_id"))
-	if err != nil {
-		ginRouter.ErrorResponse(c, errors.CombineErrors(types.ErrInvalidID, err))
-		return
-	}
+	aid, _ := c.Get(string(logging.CtxUserID))
+	id, _ := aid.(uuid.UUID)
 
 	if user, err := r.Getter.Get(c.Request.Context(), id); err != nil {
 		ginRouter.ErrorResponse(c, err)
@@ -285,11 +283,8 @@ func (r *r) GetMe(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/me [put]
 func (r *r) UpdateMe(c *gin.Context) {
-	id, err := uuid.Parse(c.GetString("user_id"))
-	if err != nil {
-		ginRouter.ErrorResponse(c, errors.CombineErrors(types.ErrInvalidID, err))
-		return
-	}
+	aid, _ := c.Get(string(logging.CtxUserID))
+	id, _ := aid.(uuid.UUID)
 
 	userDTO := dtos.SaveUser{}
 	if err := c.ShouldBindJSON(&userDTO); err != nil {
@@ -297,7 +292,7 @@ func (r *r) UpdateMe(c *gin.Context) {
 		return
 	}
 
-	if isAdmin := c.GetBool("is_admin"); !isAdmin && userDTO.IsAdmin {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin && userDTO.IsAdmin {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -324,11 +319,8 @@ func (r *r) UpdateMe(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/me [patch]
 func (r *r) PatchMe(c *gin.Context) {
-	id, err := uuid.Parse(c.GetString("user_id"))
-	if err != nil {
-		ginRouter.ErrorResponse(c, errors.CombineErrors(types.ErrInvalidID, err))
-		return
-	}
+	aid, _ := c.Get(string(logging.CtxUserID))
+	id, _ := aid.(uuid.UUID)
 
 	userDTO := dtos.PatchUser{}
 	if err := c.ShouldBindJSON(&userDTO); err != nil {
@@ -336,7 +328,7 @@ func (r *r) PatchMe(c *gin.Context) {
 		return
 	}
 
-	if isAdmin := c.GetBool("is_admin"); !isAdmin && userDTO.IsAdmin != nil {
+	if isAdmin := c.GetBool(string(logging.CtxUserIsAdmin)); !isAdmin && userDTO.IsAdmin != nil {
 		ginRouter.ErrorResponse(c, types.ErrForbidden)
 		return
 	}
@@ -369,11 +361,8 @@ func (r *r) PatchMe(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /api/v1/users/me [delete]
 func (r *r) DeleteMe(c *gin.Context) {
-	id, err := uuid.Parse(c.GetString("user_id"))
-	if err != nil {
-		ginRouter.ErrorResponse(c, errors.CombineErrors(types.ErrInvalidID, err))
-		return
-	}
+	aid, _ := c.Get(string(logging.CtxUserID))
+	id, _ := aid.(uuid.UUID)
 
 	if err := r.Deleter.Delete(c.Request.Context(), id); err != nil {
 		ginRouter.ErrorResponse(c, err)

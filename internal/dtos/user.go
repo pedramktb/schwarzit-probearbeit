@@ -24,7 +24,7 @@ type QueryUser struct {
 	VersionID *uuid.UUID `json:"version_id" swaggertype:"string" format:"uuid" example:"b05a5d28-1a51-46a8-b35c-6e160a05a0ad"`
 	FirstName *string    `json:"first_name" example:"John"`
 	LastName  *string    `json:"last_name" example:"Doe"`
-	Email     *string    `json:"email" binding:"email" format:"email" example:"abc@xyz.com"`
+	Email     *string    `json:"email" binding:"omitempty,email" format:"email" example:"abc@xyz.com"`
 	Phone     *string    `json:"phone" format:"phone" example:"+49123456789"`
 } // @name QueryUser
 
@@ -51,7 +51,7 @@ type SaveUser struct {
 type PatchUser struct {
 	FirstName *string `json:"first_name" example:"John"`
 	LastName  *string `json:"last_name" example:"Doe"`
-	Email     *string `json:"email" binding:"email" format:"email" example:"abc@xyz.com"`
+	Email     *string `json:"email" binding:"omitempty,email" format:"email" example:"abc@xyz.com"`
 	Phone     *string `json:"phone" format:"phone" example:"+49123456789"`
 	IsAdmin   *bool   `json:"is_admin" example:"false"`
 	Password  *string `json:"password" example:"password"`
@@ -104,7 +104,7 @@ func (u *QueryUser) ToUserPatch() types.UserPatch {
 func (u *UserQueryParams) ToQueryParams() types.QueryParams {
 	return types.QueryParams{
 		Pagination: u.Pagination.ToPagination(),
-		Conditions: u.QueryUser.ToUserPatch(),
+		Conditions: types.Pointer(u.QueryUser.ToUserPatch()),
 	}
 }
 
@@ -115,7 +115,7 @@ func (u *SaveUser) ToCreateUser() types.User {
 		Email:        u.Email,
 		Phone:        u.Phone,
 		IsAdmin:      u.IsAdmin,
-		PasswordHash: hashPassword(u.Password),
+		PasswordHash: HashPassword(u.Password),
 	}
 }
 
@@ -127,19 +127,31 @@ func (u *SaveUser) ToUpdateUser(id uuid.UUID) types.User {
 		Email:        u.Email,
 		Phone:        u.Phone,
 		IsAdmin:      u.IsAdmin,
-		PasswordHash: hashPassword(u.Password),
+		PasswordHash: HashPassword(u.Password),
 	}
 }
 
 func (u *PatchUser) ToUserPatch() types.UserPatch {
-	return types.UserPatch{
-		FirstName:    types.Optional[string]{HasValue: u.FirstName != nil, Value: *u.FirstName},
-		LastName:     types.Optional[string]{HasValue: u.LastName != nil, Value: *u.LastName},
-		Email:        types.Optional[string]{HasValue: u.Email != nil, Value: *u.Email},
-		Phone:        types.Optional[string]{HasValue: u.Phone != nil, Value: *u.Phone},
-		IsAdmin:      types.Optional[bool]{HasValue: u.IsAdmin != nil, Value: *u.IsAdmin},
-		PasswordHash: types.Optional[string]{HasValue: u.Password != nil, Value: hashPassword(*u.Password)},
+	userPatch := types.UserPatch{}
+	if u.FirstName != nil {
+		userPatch.FirstName = types.Optional[string]{HasValue: true, Value: *u.FirstName}
 	}
+	if u.LastName != nil {
+		userPatch.LastName = types.Optional[string]{HasValue: true, Value: *u.LastName}
+	}
+	if u.Email != nil {
+		userPatch.Email = types.Optional[string]{HasValue: true, Value: *u.Email}
+	}
+	if u.Phone != nil {
+		userPatch.Phone = types.Optional[string]{HasValue: true, Value: *u.Phone}
+	}
+	if u.IsAdmin != nil {
+		userPatch.IsAdmin = types.Optional[bool]{HasValue: true, Value: *u.IsAdmin}
+	}
+	if u.Password != nil {
+		userPatch.PasswordHash = types.Optional[string]{HasValue: true, Value: HashPassword(*u.Password)}
+	}
+	return userPatch
 }
 
 func (u *RegisterUser) ToUser() types.User {
@@ -148,11 +160,11 @@ func (u *RegisterUser) ToUser() types.User {
 		LastName:     u.LastName,
 		Email:        u.Email,
 		Phone:        u.Phone,
-		PasswordHash: hashPassword(u.Password),
+		PasswordHash: HashPassword(u.Password),
 	}
 }
 
-func hashPassword(password string) string {
+func HashPassword(password string) string {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hash)
 }

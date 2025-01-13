@@ -12,7 +12,9 @@ import (
 	"github.com/pedramktb/schwarzit-probearbeit/internal/datasource"
 	"github.com/pedramktb/schwarzit-probearbeit/internal/dtos"
 	ginRouter "github.com/pedramktb/schwarzit-probearbeit/internal/gin"
+	"github.com/pedramktb/schwarzit-probearbeit/internal/logging"
 	"github.com/pedramktb/schwarzit-probearbeit/internal/types"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type r struct {
@@ -26,7 +28,6 @@ func create(
 	userSaver datasource.Saver[types.User],
 	jwt *authJWT.JWT,
 ) *r {
-
 	return &r{
 		userByEmailGetter,
 		userSaver,
@@ -80,6 +81,11 @@ func (r *r) Login(c *gin.Context) {
 	user, err := r.UserByEmailGetter.GetByEmail(c.Request.Context(), loginRequest.Email)
 	if err != nil {
 		ginRouter.ErrorResponse(c, err)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(loginRequest.Password)); err != nil {
+		ginRouter.ErrorResponse(c, errors.Join(types.ErrUnauthorized, err))
 		return
 	}
 
@@ -164,10 +170,10 @@ func (r *r) AuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	c.Set("user_id", userID)
+	c.Set(string(logging.CtxUserID), userID)
 
 	if admin := claims["admin"].(bool); admin {
-		c.Set("admin", true)
+		c.Set(string(logging.CtxUserIsAdmin), true)
 	}
 
 	c.Next()

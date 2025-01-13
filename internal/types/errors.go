@@ -1,7 +1,8 @@
 package types
 
 import (
-	"github.com/cockroachdb/errors"
+	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -15,50 +16,44 @@ var (
 	ErrInternal     = errors.New("internal error")
 
 	// ErrBadRequest Most Used Secondary Errors
-	ErrInvalidID = errors.Wrap(ErrBadRequest, "invalid id")
+	ErrInvalidID = errors.Join(ErrBadRequest, errors.New("invalid id"))
 
 	// ErrInternal Most Used Secondary Errors
-	ErrDBUnhandled   = errors.Wrap(ErrInternal, "database unhandled error")
-	ErrDataImmutable = errors.Wrap(ErrInternal, "data is immutable")
-	ErrDataCorrupted = errors.Wrap(ErrInternal, "data corrupted")
+	ErrDBUnhandled   = errors.Join(ErrInternal, errors.New("database unhandled error"))
+	ErrDataImmutable = errors.Join(ErrInternal, errors.New("data is immutable"))
+	ErrDataCorrupted = errors.Join(ErrInternal, errors.New("data corrupted"))
 )
 
 // DBError converts gorm errors to internal errors
 func DBError(err error) error {
-	if err == nil {
+	switch {
+	case err == nil:
 		return nil
-	} else if errors.IsAny(err,
-		gorm.ErrCheckConstraintViolated,
-		gorm.ErrForeignKeyViolated,
-	) {
-		return errors.CombineErrors(ErrBadRequest, err)
-	} else if errors.IsAny(err,
-		gorm.ErrRecordNotFound,
-	) {
-		return errors.CombineErrors(ErrNotFound, err)
-	} else if errors.IsAny(err,
-		gorm.ErrDryRunModeUnsupported,
-		gorm.ErrDuplicatedKey,
-		gorm.ErrEmptySlice,
-		gorm.ErrInvalidDB,
-		gorm.ErrDuplicatedKey,
-		gorm.ErrInvalidData,
-		gorm.ErrInvalidField,
-		gorm.ErrInvalidTransaction,
-		gorm.ErrInvalidValue,
-		gorm.ErrInvalidValueOfLength,
-		gorm.ErrMissingWhereClause,
-		gorm.ErrModelAccessibleFieldsRequired,
-		gorm.ErrModelValueRequired,
-		gorm.ErrNotImplemented,
-		gorm.ErrPreloadNotAllowed,
-		gorm.ErrPrimaryKeyRequired,
-		gorm.ErrRegistered,
-		gorm.ErrSubQueryRequired,
-		gorm.ErrUnsupportedDriver,
-		gorm.ErrUnsupportedRelation,
-	) {
-		return errors.CombineErrors(ErrInternal, err)
+	case errors.Is(err, gorm.ErrCheckConstraintViolated),
+		errors.Is(err, gorm.ErrForeignKeyViolated):
+		return errors.Join(ErrBadRequest, err)
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		return errors.Join(ErrNotFound, err)
+	case errors.Is(err, gorm.ErrDryRunModeUnsupported),
+		errors.Is(err, gorm.ErrEmptySlice),
+		errors.Is(err, gorm.ErrInvalidDB),
+		errors.Is(err, gorm.ErrDuplicatedKey),
+		errors.Is(err, gorm.ErrInvalidData),
+		errors.Is(err, gorm.ErrInvalidField),
+		errors.Is(err, gorm.ErrInvalidTransaction),
+		errors.Is(err, gorm.ErrInvalidValue),
+		errors.Is(err, gorm.ErrInvalidValueOfLength),
+		errors.Is(err, gorm.ErrMissingWhereClause),
+		errors.Is(err, gorm.ErrModelAccessibleFieldsRequired),
+		errors.Is(err, gorm.ErrModelValueRequired),
+		errors.Is(err, gorm.ErrNotImplemented),
+		errors.Is(err, gorm.ErrPreloadNotAllowed),
+		errors.Is(err, gorm.ErrPrimaryKeyRequired),
+		errors.Is(err, gorm.ErrRegistered),
+		errors.Is(err, gorm.ErrSubQueryRequired),
+		errors.Is(err, gorm.ErrUnsupportedDriver),
+		errors.Is(err, gorm.ErrUnsupportedRelation):
+		return errors.Join(ErrInternal, err)
 	}
 	return ErrDBUnhandled
 }

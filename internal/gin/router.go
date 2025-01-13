@@ -2,12 +2,12 @@ package ginRouter
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/pedramktb/schwarzit-probearbeit/docs"
+	"github.com/pedramktb/schwarzit-probearbeit/internal/logging"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/fx"
@@ -35,14 +35,14 @@ func run(lc fx.Lifecycle, r *gin.Engine) error {
 					panic(errors.Wrap(err, "server closed unexpectedly"))
 				}
 			}()
-			log.Println("Server started on :8080")
+			logging.Logger().Info("Server started on :8080")
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
 			if cancel != nil {
 				cancel()
 			}
-			return nil
+			return logging.Close()
 		},
 	})
 

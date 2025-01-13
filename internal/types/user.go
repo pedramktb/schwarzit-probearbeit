@@ -14,26 +14,26 @@ type User struct {
 	PasswordHash    string    `gorm:"column:password_hash"`
 }
 
-func (c *User) ToSave() (base, version map[string]any) {
-	c.VersionID = uuid.New()
-	c.IsLatestVersion = true
+func (u *User) ToSave() (base, version map[string]any) {
+	u.VersionID = uuid.New()
+	u.IsLatestVersion = true
 
-	if c.ID == uuid.Nil {
-		c.ID = uuid.New()
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
 		base = map[string]any{
-			"id": c.ID,
+			"id": u.ID,
 		}
 	}
 
 	version = map[string]any{
-		"id":            c.VersionID,
-		"user_id":       c.ID,
-		"first_name":    c.FirstName,
-		"last_name":     c.LastName,
-		"email":         c.Email,
-		"phone":         c.Phone,
-		"is_admin":      c.IsAdmin,
-		"password_hash": c.PasswordHash,
+		"id":            u.VersionID,
+		"user_id":       u.ID,
+		"first_name":    u.FirstName,
+		"last_name":     u.LastName,
+		"email":         u.Email,
+		"phone":         u.Phone,
+		"is_admin":      u.IsAdmin,
+		"password_hash": u.PasswordHash,
 	}
 
 	return base, version
@@ -50,7 +50,7 @@ type UserPatch struct {
 	PasswordHash Optional[string]
 }
 
-func (u UserPatch) ToMap() map[string]any {
+func (u *UserPatch) ToMap() map[string]any {
 	m := make(map[string]any)
 	if u.ID.HasValue {
 		m["id"] = u.ID.Value

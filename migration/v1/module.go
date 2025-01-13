@@ -7,7 +7,7 @@ import (
 
 var FXV1MigrationProvide = fx.Provide(
 	create,
-	fx.Annotate(func(m *migrator) migration.Migrator { return m }, fx.ParamTags(`name:"v1Migrator"`)),
+	fx.Annotate(func(m *migrator) migration.Migrator { return m }, fx.ResultTags(`name:"v1Migrator"`)),
 )
 
 var FXV1TestMigrationProvide = fx.Provide(

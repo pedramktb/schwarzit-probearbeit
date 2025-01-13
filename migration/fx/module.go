@@ -11,7 +11,6 @@ var FXMigrationModule = fx.Module("migration",
 	fx.Provide(fx.Annotate(
 		func(
 			v1Migrator migration.Migrator,
-			legacyDataMigrator migration.Migrator,
 		) migration.Migrator {
 			return create(
 				v1Migrator,

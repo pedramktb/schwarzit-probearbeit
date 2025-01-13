@@ -7,6 +7,6 @@ import (
 )
 
 func Local_Test_Setup_DB(t *testing.T) {
-	db := postgres.Test_Create_DB("localhost", "5432", "bt-dev")
+	db := postgres.Test_Create_DB("localhost", "5432", "core")
 	MigrateTestData(db)
 }

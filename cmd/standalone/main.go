@@ -1,7 +1,6 @@
 package main
 
 import (
-	cmd "github.com/matthiasbruns/golang-base-lib/bootstrap"
 	"go.uber.org/fx"
 
 	authDI "github.com/pedramktb/schwarzit-probearbeit/internal/auth/fx"
@@ -14,8 +13,6 @@ import (
 var app *fx.App
 
 func init() {
-	cmd.LoadEnv(".env")
-
 	app = fx.New(
 		postgres.FXPostgresModule,
 		redis.FXRedisModule,

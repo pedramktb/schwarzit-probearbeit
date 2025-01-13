@@ -33,27 +33,27 @@ func create(secret string) *JWT {
 func (j *JWT) GenerateAccessToken(claims jwt.MapClaims) (string, error) {
 	claims["iat"] = time.Now().Unix()
 	claims["exp"] = time.Now().Add(accessTokenTTL).Unix()
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(j.accessTokenSecret)
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(j.accessTokenSecret))
 }
 
 func (j *JWT) GenerateRefreshToken(claims jwt.MapClaims) (string, error) {
 	claims["iat"] = time.Now().Unix()
 	claims["exp"] = time.Now().Add(refreshTokenTTL).Unix()
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(j.refreshTokenSecret)
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(j.refreshTokenSecret))
 }
 
 func (j *JWT) ValidateAccessToken(token string) (jwt.MapClaims, error) {
 	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return j.accessTokenSecret, nil
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (any, error) {
+		return []byte(j.accessTokenSecret), nil
 	})
 	return claims, err
 }
 
 func (j *JWT) ValidateRefreshToken(token string) (jwt.MapClaims, error) {
 	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return j.refreshTokenSecret, nil
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (any, error) {
+		return []byte(j.refreshTokenSecret), nil
 	})
 	return claims, err
 }

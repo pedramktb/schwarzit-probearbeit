@@ -1,7 +1,5 @@
 SET timezone = 'UTC';
 
-CREATE EXTENSION postgis;
-
 -- Simple domains
 CREATE DOMAIN non_empty_text AS VARCHAR(255) CHECK (VALUE <> ''); -- max length 255
 CREATE DOMAIN non_empty_large_text AS VARCHAR(1000) CHECK (VALUE <> ''); -- max length 1000
@@ -26,10 +24,9 @@ CREATE DOMAIN address_domain AS address_type CHECK (VALUE IS NULL OR (
 CREATE TABLE users (
     id UUID PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ
 );
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
-CREATE UNIQUE INDEX idx_users_kinde_id ON users(kinde_id);
 
 CREATE TABLE user_versions (
     id UUID PRIMARY KEY,
@@ -40,6 +37,7 @@ CREATE TABLE user_versions (
     email email_domain NOT NULL,
     phone phone_domain NOT NULL,
     is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    password_hash non_empty_large_text NOT NULL
 );
 CREATE INDEX idx_user_versions_created_at ON user_versions(created_at);
 CREATE INDEX idx_user_versions_id ON user_versions(user_id);
@@ -73,7 +71,7 @@ DO $$
 DECLARE
     table_name TEXT;
     tables TEXT[] := ARRAY[
-        'users',
+        'users'
     ];
 BEGIN
     FOREACH table_name IN ARRAY tables LOOP

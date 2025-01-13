@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	cmd "github.com/matthiasbruns/golang-base-lib/bootstrap"
+	_ "github.com/pedramktb/go-base-lib/pkg/env"
 	"github.com/pedramktb/schwarzit-probearbeit/migration"
 	migrationDI "github.com/pedramktb/schwarzit-probearbeit/migration/fx"
 	"github.com/pedramktb/schwarzit-probearbeit/pkg/postgres"
@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	cmd.LoadEnv(".env")
 	fx.New(
 		postgres.FXPostgresModule,
 		migrationDI.FXMigrationModule,

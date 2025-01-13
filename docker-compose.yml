@@ -12,8 +12,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: core
 
-  adminer:
-    image: adminer
+  redis:
+    image: redis
     restart: always
     ports:
-      - "8001:8080"
+      - "6379:6379"
+    environment:
+      REDIS_USERNAME: redis
+      REDIS_PASSWORD: example
+      REDIS_ACL: |
+        user ${REDIS_USERNAME} on >${REDIS_PASSWORD} ~* +@all
+    command: >
+      sh -c "echo \"$REDIS_ACL\" > /usr/local/etc/redis/aclfile &&
+      redis-server --aclfile /usr/local/etc/redis/aclfile"

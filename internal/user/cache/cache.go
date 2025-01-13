@@ -3,6 +3,7 @@ package userCache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -15,7 +16,8 @@ import (
 
 const (
 	// CacheTTL is the time-to-live for cached user data
-	CacheTTL = 24 * time.Hour
+	cacheTTL           = 24 * time.Hour
+	cacheUpdateTimeout = 5 * time.Second
 )
 
 type cache struct {
@@ -56,7 +58,7 @@ func (c *cache) Get(ctx context.Context, id uuid.UUID) (types.User, error) {
 		} else {
 			logging.FromContext(ctx).Warn("failed to unmarshal cached user data", zap.String("cached_user", cached), zap.Error(err))
 		}
-	} else if err != redis.Nil {
+	} else if !errors.Is(err, redis.Nil) {
 		logging.FromContext(ctx).Warn("cache error", zap.Error(err))
 	}
 
@@ -67,7 +69,7 @@ func (c *cache) Get(ctx context.Context, id uuid.UUID) (types.User, error) {
 		return user, err
 	}
 
-	c.setUserCache(ctx, user)
+	c.setUserCache(user)
 
 	return user, nil
 }
@@ -78,16 +80,7 @@ func (c *cache) Save(ctx context.Context, user types.User) (types.User, error) {
 		return savedUser, err
 	}
 
-	// Invalidate cache
-	if err = c.Client.Del(ctx, keyFromID(user.ID)).Err(); err == redis.Nil {
-		return savedUser, nil
-	} else if err != nil {
-		logging.FromContext(ctx).Error("failed to invalidate cache", zap.Error(err))
-	}
-
-	if err = c.Client.Del(ctx, "user:email:"+user.Email).Err(); err != redis.Nil && err != nil {
-		logging.FromContext(ctx).Error("failed to invalidate cache", zap.Error(err))
-	}
+	c.delUserCache(savedUser.ID, &user.Email)
 
 	return savedUser, nil
 }
@@ -98,10 +91,7 @@ func (c *cache) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	// Invalidate cache
-	if err := c.Client.Del(ctx, keyFromID(id)).Err(); err != redis.Nil && err != nil {
-		logging.FromContext(ctx).Error("failed to invalidate cache", zap.Error(err))
-	}
+	c.delUserCache(id, nil)
 
 	return nil
 }
@@ -116,7 +106,7 @@ func (c *cache) GetByEmail(ctx context.Context, email string) (types.User, error
 		} else {
 			logging.FromContext(ctx).Warn("failed to unmarshal cached user id", zap.String("cached_user_id", cached), zap.Error(err))
 		}
-	} else if err != redis.Nil {
+	} else if !errors.Is(err, redis.Nil) {
 		logging.FromContext(ctx).Warn("cache error", zap.Error(err))
 	}
 
@@ -126,32 +116,55 @@ func (c *cache) GetByEmail(ctx context.Context, email string) (types.User, error
 		return user, err
 	}
 
-	c.setUserCache(ctx, user)
+	c.setUserCache(user)
 
 	return user, nil
 }
 
-func (c *cache) setUserCache(ctx context.Context, user types.User) {
-	// Cache the result
-	userData, err := json.Marshal(user)
-	if err != nil {
-		logging.FromContext(ctx).Warn("failed to marshal user for caching", zap.Any("caching_user", user), zap.Error(err))
-	}
+func (c *cache) setUserCache(user types.User) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), cacheUpdateTimeout)
+		defer cancel()
+		// Cache the result
+		userData, err := json.Marshal(user)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to marshal user for caching", zap.Any("caching_user", user), zap.Error(err))
+		}
 
-	err = c.Client.Set(ctx, keyFromID(user.ID), userData, CacheTTL).Err()
-	if err != nil {
-		logging.FromContext(ctx).Warn("failed to cache user", zap.Any("caching_user", user), zap.Error(err))
-	}
+		err = c.Client.Set(ctx, keyFromID(user.ID), userData, cacheTTL).Err()
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to cache user", zap.Any("caching_user", user), zap.Error(err))
+		}
 
-	// Cache the result id by email (less space than saving the whole user and add the ability to invalidate by id alone)
-	// TODO: use redisJSON for better performance
-	idData, err := json.Marshal(user.ID)
-	if err != nil {
-		logging.FromContext(ctx).Warn("failed to marshal user id for caching", zap.String("caching_user_id", user.ID.String()), zap.Error(err))
-	}
+		// Cache the result id by email (less space than saving the whole user and add the ability to invalidate by id alone)
+		// TODO: use redisJSON for better performance
+		idData, err := json.Marshal(user.ID)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to marshal user id for caching", zap.String("caching_user_id", user.ID.String()), zap.Error(err))
+		}
 
-	err = c.Client.Set(ctx, "user:email:"+user.Email, idData, CacheTTL).Err()
-	if err != nil {
-		logging.FromContext(ctx).Warn("failed to cache user id", zap.String("caching_user_id", user.ID.String()), zap.Error(err))
-	}
+		err = c.Client.Set(ctx, "user:email:"+user.Email, idData, cacheTTL).Err()
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to cache user id", zap.String("caching_user_id", user.ID.String()), zap.Error(err))
+		}
+	}()
+}
+
+func (c *cache) delUserCache(id uuid.UUID, email *string) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), cacheUpdateTimeout)
+		defer cancel()
+
+		// Invalidate cache
+		if err := c.Client.Del(ctx, keyFromID(id)).Err(); !errors.Is(err, redis.Nil) && err != nil {
+			logging.FromContext(ctx).Error("failed to invalidate cache", zap.Error(err))
+		}
+
+		// Invalidate cache by email to reduce 1 lookup
+		if email != nil {
+			if err := c.Client.Del(ctx, "user:email:"+*email).Err(); !errors.Is(err, redis.Nil) && err != nil {
+				logging.FromContext(ctx).Error("failed to invalidate cache", zap.Error(err))
+			}
+		}
+	}()
 }

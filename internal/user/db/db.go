@@ -24,13 +24,13 @@ func lastVersionQuery(db, tx *gorm.DB) *gorm.DB {
 		db.Table("user_versions").Select("DISTINCT ON (user_id) *").Order("user_id, created_at DESC"),
 	).Select(
 		"users.id as id",
-		"users.kinde_id as kinde_id",
 		"last_version.id as version_id",
 		"last_version.first_name as first_name",
 		"last_version.last_name as last_name",
 		"last_version.email as email",
 		"last_version.phone as phone",
 		"last_version.is_admin as is_admin",
+		"last_version.password_hash as password_hash",
 		"true as is_latest_version",
 	).Where("users.deleted_at IS NULL")
 }
@@ -41,13 +41,13 @@ func allVersionsQuery(db, tx *gorm.DB) *gorm.DB {
 		db.Table("user_versions").Select("DISTINCT ON (user_id) user_id", "id").Order("user_id, created_at DESC"),
 	).Select(
 		"users.id as id",
-		"users.kinde_id as kinde_id",
 		"user_versions.id as version_id",
 		"user_versions.first_name as first_name",
 		"user_versions.last_name as last_name",
 		"user_versions.email as email",
 		"user_versions.phone as phone",
 		"user_versions.is_admin as is_admin",
+		"user_versions.password_hash as password_hash",
 		"user_versions.id = last_version.id as is_latest_version",
 	).Where("users.deleted_at IS NULL")
 }
@@ -104,6 +104,6 @@ func (d *db) GetVersion(ctx context.Context, versionID uuid.UUID) (types.User, e
 func (d *db) GetByEmail(ctx context.Context, email string) (types.User, error) {
 	var user types.User
 	err := lastVersionQuery(d.WithContext(ctx), d.WithContext(ctx).Table("users")).
-		Where("users.email = ?", email).First(&user).Error
+		Where("email = ?", email).First(&user).Error
 	return user, types.DBError(err)
 }
