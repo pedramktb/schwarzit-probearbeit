@@ -48,6 +48,7 @@ Note that the PUT method is used for full updates and PATCH is used for partial 
 
 ### Limitations
 There are known bugs and features that are missing in the probearbeit, such as "Checking duplicate emails on User updates and registrations", "Lack of email confirmation in registration process", "No way of adding admin users without having to use the database directly", "Lack of password confirmation on registration or user updates", and etc. That being said, the probearbeit is a good example of a simple REST API with a few features, and the mentioned features are not realistically expected in a probearbeit.
+The codebase also lacks implemented usecase layer which would have been required for the aforementioned features.
 
 ### Version Control and CI/CD
 Only expect basic commits with no branching or merging (and thus no PRs or code reviews). There is a basic CI/CD pipeline in the .github/workflows directory that runs the tests and builds the application for pull requests and pushes to the main branch as well as releases.
