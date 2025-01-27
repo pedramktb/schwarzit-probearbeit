@@ -182,8 +182,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
 github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
-github.com/pedramktb/go-base-lib v1.0.3 h1:ryUmuuglYrmzdBpAGSo7VyePyxZQjchpmbtDkebc2IE=
-github.com/pedramktb/go-base-lib v1.0.3/go.mod h1:LsdLlCAPUHN6fdBP7lbs+J7iT1WB8sqNXYA7OBR7yP0=
+github.com/pedramktb/go-base-lib v1.0.4 h1:Y/EZ2EeJIV3Jaz6H/YNG94Bt76uHD8dsnXufj4DaUSY=
+github.com/pedramktb/go-base-lib v1.0.4/go.mod h1:4vbTL/9wwQmPRKLb/Bhs3NwC1WNm2VXVovRe1xv8xNQ=
 github.com/pelletier/go-toml/v2 v2.2.3 h1:YmeHyLY8mFWbdkNWwpr+qIL2bEqT0o95WSdkNHvL12M=
 github.com/pelletier/go-toml/v2 v2.2.3/go.mod h1:MfCQTFTvCcUyyvvwm1+G6H/jORL20Xlb6rzQu9GuUkc=
 github.com/pingcap/errors v0.11.4 h1:lFuQV/oaUMGcD2tqt+01ROSmJs75VG1ToEOkZIZ4nE4=
